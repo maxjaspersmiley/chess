@@ -42,39 +42,54 @@ impl Chessboard {
         Chessboard{board}
     }
 
-    pub fn player_move(&mut self, start: Coord, end: Coord) -> bool{
-        match self.board[start.row][start.col] {
-            None    => false,
-            Some(c) => {
-                match move_chessman(c, self.board[end.row][end.col], start, end){
-                    false => false,
-                    true => {
-                        //first we must check if any pieces are in the way. 
+    fn check_path(& self, start: Coord, end: Coord) -> bool {
+        let diff_row = start.row as i32 - end.row as i32; //positive is moving up.
+        let diff_col = end.col as i32 - start.col as i32; //positive is to the right.
+        
 
-                        self.board[end.row][end.col] = self.board[start.row][start.col];
-                        self.board[start.row][start.col] = None;
-                        true
+
+    pub fn player_move(&mut self, start: Coord, end: Coord) -> Option<bool> {
+        //check the piece at start location. if empty, failure
+        match self.board[start.row][start.col] {
+            None    => None,
+            Some(c) => {
+                //ask piece to decide if its rules support a move to end location. if not, failure
+                match move_chessman(c, self.board[end.row][end.col], start, end){
+                    false => None,
+                    true => {
+                        //check the contents of the destination square. if an ally, failure.
+                        match self.board[end.row][end.col] {
+                            None    => None,
+                            Some(p) => {
+                                if p.color == c.color {
+                                    None
+                                }
+                                else {
+                                    //check that the path to the destination square is not
+                                    //obstructed except if piece is knight or king
+
+
+
+                                    /*
+                                    if p.piece == King {
+                                        Some(true)
+                                    }
+                                    else {
+                                        self.board[end.row][end.col] = self.board[start.row][start.col];
+                                        self.board[start.row][start.col] = None;
+                                        Some(false)
+                                    }
+                                    */
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
 
 
 
