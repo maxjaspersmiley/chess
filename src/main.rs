@@ -1,3 +1,9 @@
+//main.rs
+
+pub mod chessboard;
+use chessboard::Chessboard;
+
 fn main() {
-    println!("Hello, world!");
+    let cboard = Chessboard::new();
+    cboard.print();
 }
