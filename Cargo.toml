@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 colored = "1.8.0"
+rprompt = "1.0.3"
