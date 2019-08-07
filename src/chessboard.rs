@@ -41,6 +41,14 @@ impl Chessboard {
 
         Chessboard{board}
     }
+    
+    pub fn check_ownership(&self, loc: Coord, color: Color) -> bool {
+        match self.board[loc.row][loc.col]{
+            None    => false,
+            Some(a) => a.color == color,
+        }
+    }
+
 
     fn check_attack(&self, c: Chessman, loc: Coord) -> Vec<Coord> {
         let mut attacks = Vec::new();
@@ -48,23 +56,46 @@ impl Chessboard {
         let col = loc.col as i8;
         match c.piece {
             Pawn    => {
-                if c.color == White {
-                    if col - 1 >= 0 {
-                        attacks.push(Coord::new((row - 1) as usize, (col - 1) as usize));
-                    }
-                    if col + 1 < 8 {
-                        attacks.push(Coord::new((row - 1) as usize, (col + 1) as usize));
-                    }
-                }
-                else {
-                    if loc.col as i8 - 1 >= 0 {
-                        attacks.push(Coord::new((row + 1) as usize, (col - 1) as usize));
-                    }
-                    if loc.col + 1 < 8 {
-                        attacks.push(Coord::new((row + 1) as usize, (col + 1) as usize));
+                for i in -1..=1 {
+                    let a_col = col + i;
+                    if a_col >= 0 && a_col < 8 {
+                        let dir = match c.color {
+                            White => -1,
+                            Black =>  1,
+                        };
+                        if i != 0 {
+                            match self.board[(row + dir) as usize][a_col as usize] {
+                                Some(p) => {
+                                    if p.color == c.color {
+                                        continue;
+                                    }
+                                    else {
+                                        attacks.push(Coord::new((row + dir) as usize, a_col as usize));
+                                    }
+                                }
+                                None    => (),
+                            }
+                        }
+                        else {
+                            match self.board[(row + dir) as usize][a_col as usize] {
+                                Some(_) => (),
+                                None    => attacks.push(Coord::new((row + dir) as usize, a_col as usize)),
+                            }
+                            let start_row = match c.color {
+                                White => 6,
+                                Black => 1,
+                            };
+                            if row == start_row {
+                                match self.board[(row + 2 * dir) as usize][a_col as usize] {
+                                    Some(_) => (),
+                                    None    => attacks.push(Coord::new((row + 2 * dir) as usize, a_col as usize)),
+                                }
+                            }
+                        }
                     }
                 }
             }
+
             Rook    => {
                 //look to our left (starting with closest square)
                 for l in (0..loc.col).rev() {
@@ -133,13 +164,15 @@ impl Chessboard {
             }
 
             Bishop  => {
+                let mut ul = true;
+                let mut ur = true;
+                let mut dl = true;
+                let mut dr = true;
                 for i in 1..8 {
-                    if row - i >= 0 && col - i >= 0 {
+                    if row - i >= 0 && col - i >= 0 && ul {
                         match self.board[(row - i) as usize][(col - i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {ul = false;}
                                 else {
                                     attacks.push(Coord::new((row - i) as usize, (col - i) as usize));
                                 }
@@ -147,40 +180,37 @@ impl Chessboard {
                             None    => attacks.push(Coord::new((row - i) as usize, (col - i) as usize))
                         }
                     }
-                    if row - i >= 0 && col + i < 8 {
+                    if row - i >= 0 && col + i < 8 && ur {
                         match self.board[(row - i) as usize][(col + i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {ur = false;}
                                 else {
                                     attacks.push(Coord::new((row - i) as usize, (col + i) as usize));
+                                    ur = false;
                                 }
                             }
                             None    => attacks.push(Coord::new((row - i) as usize, (col + i) as usize)),
                         }
                     }
-                    if row + i < 8 && col - i >= 0 {
+                    if row + i < 8 && col - i >= 0 && dl {
                         match self.board[(row + i) as usize][(col - i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {dl = false;}
                                 else {
                                     attacks.push(Coord::new((row + i) as usize, (col - i) as usize));
+                                    dl = false;
                                 }
                             }
                             None    => attacks.push(Coord::new((row + i) as usize, (col - i) as usize)),
                         }
                     }
-                    if row + i < 8 && col + i < 8 {
+                    if row + i < 8 && col + i < 8 && dr {
                         match self.board[(row + i) as usize][(col + i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {dr = false;}
                                 else {
                                     attacks.push(Coord::new((row + i) as usize, (col + i) as usize));
+                                    dr = false;
                                 }
                             }
                             None    => attacks.push(Coord::new((row + i) as usize, (col + i) as usize)),
@@ -193,13 +223,17 @@ impl Chessboard {
                 for i in -2..=2 {
                     if i == 0 { continue; }
                     let j;
-                    if i % 2 == 1 { j = 2; }
-                    else { j = 1; }
+                    if i == -2 || i == 2 {
+                        j = 1;
+                    }
+                    else {
+                        j = 2;
+                    }
                     if row + i >= 0 && row + i < 8 && col + j < 8{
                         match self.board[(row + i) as usize][(col + j) as usize] {
                             Some(p) => {
                                 if p.color == c.color {
-                                    break;
+                                    continue;
                                 }
                                 else {
                                     attacks.push(Coord::new((row + i) as usize, (col + j) as usize));
@@ -212,7 +246,7 @@ impl Chessboard {
                         match self.board[(row + i) as usize][(col - j) as usize] {
                             Some(p) => {
                                 if p.color == c.color {
-                                    break;
+                                    continue;
                                 }
                                 else {
                                     attacks.push(Coord::new((row + i) as usize, (col - j) as usize));
@@ -222,6 +256,7 @@ impl Chessboard {
                         }
                     }
                 }
+
             }
             Queen   => {
                 //look to our left (starting with closest square)
@@ -288,13 +323,15 @@ impl Chessboard {
                         None    => attacks.push(Coord::new(d, loc.col)),
                     }
                 }
+                let mut ul = true;
+                let mut ur = true;
+                let mut dl = true;
+                let mut dr = true;
                 for i in 1..8 {
-                    if row - i >= 0 && col - i >= 0 {
+                    if row - i >= 0 && col - i >= 0 && ul {
                         match self.board[(row - i) as usize][(col - i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {ul = false;}
                                 else {
                                     attacks.push(Coord::new((row - i) as usize, (col - i) as usize));
                                 }
@@ -302,40 +339,37 @@ impl Chessboard {
                             None    => attacks.push(Coord::new((row - i) as usize, (col - i) as usize))
                         }
                     }
-                    if row - i >= 0 && col + i < 8 {
+                    if row - i >= 0 && col + i < 8 && ur {
                         match self.board[(row - i) as usize][(col + i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {ur = false;}
                                 else {
                                     attacks.push(Coord::new((row - i) as usize, (col + i) as usize));
+                                    ur = false;
                                 }
                             }
                             None    => attacks.push(Coord::new((row - i) as usize, (col + i) as usize)),
                         }
                     }
-                    if row + i < 8 && col - i >= 0 {
+                    if row + i < 8 && col - i >= 0 && dl {
                         match self.board[(row + i) as usize][(col - i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {dl = false;}
                                 else {
                                     attacks.push(Coord::new((row + i) as usize, (col - i) as usize));
+                                    dl = false;
                                 }
                             }
                             None    => attacks.push(Coord::new((row + i) as usize, (col - i) as usize)),
                         }
                     }
-                    if row + i < 8 && col + i < 8 {
+                    if row + i < 8 && col + i < 8 && dr {
                         match self.board[(row + i) as usize][(col + i) as usize] {
                             Some(p) => {
-                                if p.color == c.color {
-                                    break;
-                                }
+                                if p.color == c.color {dr = false;}
                                 else {
                                     attacks.push(Coord::new((row + i) as usize, (col + i) as usize));
+                                    dr = false;
                                 }
                             }
                             None    => attacks.push(Coord::new((row + i) as usize, (col + i) as usize)),
@@ -352,9 +386,7 @@ impl Chessboard {
                         if mr >= 0 && mr < 8 && mc >= 0 && mc < 8 {
                             match self.board[mr as usize][mc as usize] {
                                 Some(p) => {
-                                    if p.color == c.color {
-                                        break;
-                                    }
+                                    if p.color == c.color {()}
                                     else {
                                         attacks.push(Coord::new(mr as usize, mc as usize));
                                     }
@@ -379,31 +411,15 @@ impl Chessboard {
                 match move_chessman(c, self.board[end.row][end.col], start, end){
                     false => None,
                     true => {
-                        //check the contents of the destination square. if an ally, failure.
-                        match self.board[end.row][end.col] {
-                            None    => None,
-                            Some(p) => {
-                                if p.color == c.color {
-                                    None
-                                }
-                                else {
-                                    //check that the path to the destination square is not
-                                    //obstructed except if piece is knight or king
-
-                                    
-
-
-
-
-
-
-
-                                    
-                                    self.board[end.row][end.col] = self.board[start.row][start.col];
-                                    self.board[start.row][start.col] = None;
-                                    Some(false)
-                                }
-                            }
+                        let attacks: Vec<Coord> = self.check_attack(c, start);
+                        println!("attacks: {:?}", attacks);
+                        if !attacks.contains(&end) {
+                            None
+                        }
+                        else {
+                            self.board[end.row][end.col] = self.board[start.row][start.col];
+                            self.board[start.row][start.col] = None;
+                            Some(false)
                         }
                     }
                 }
@@ -411,25 +427,28 @@ impl Chessboard {
         }
     }
 
-    
-
-
-
-
-
-
-
     pub fn print(&self) {
         for row in 0..8 {
             if row == 0{
-                for _ in 0..49 {
-                    print!("{}", "-".black().on_white());
+                for i in 0..49 {
+                    if (i - 3) % 6 == 0 {
+                        print!("{}", (((((i - 3) / 6) + 65) as u8) as char).to_string().black().on_white());
+                    }
+                    else{
+                        print!("{}", "-".black().on_white());
+                    }
+                    if i == 48 {
+                        print!("{}", "   ".black().on_white());
+                    }
                 }
             }
             else {
                 for i in 0..49 {
                     if i % 6 == 0 {
                         print!("{}", "|".black().on_white());
+                        if i == 48 {
+                            print!("{}", "   ".black().on_white());
+                        }
                     }
                     else {
                         print!("{}", "-".black().on_white());
@@ -440,12 +459,15 @@ impl Chessboard {
             for col in 0..8 {
                 print!("{}{}{}", "|  ".black().on_white(), chessmen::print(self.board[row][col]), "  ".black().on_white());
                 if col == 7 {
-                    println!("{}", "|".black().on_white())
+                    println!("{}{}{}", "| ".black().on_white(), (8 - row).to_string().black().on_white(), " ".black().on_white());
                 }
             }
         }
-        for _ in 0..49 {
+        for i in 0..49 {
             print!("{}", "-".black().on_white());
+            if i == 48 {
+                print!("{}", "   ".black().on_white());
+            }
         }
         println!("");
     }

@@ -1,6 +1,7 @@
 use crate::chessboard::chessmen::Piece::*;
 use crate::chessboard::chessmen::Color::*;
 use colored::Colorize;
+use std::fmt;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Piece {
@@ -29,6 +30,15 @@ impl Coord {
 pub enum Color {
     White,
     Black,
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            White => write!(f, "White"),
+            Black => write!(f, "Black"),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
