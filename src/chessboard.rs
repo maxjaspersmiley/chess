@@ -42,10 +42,332 @@ impl Chessboard {
         Chessboard{board}
     }
 
-    fn check_path(& self, start: Coord, end: Coord) -> bool {
-        let diff_row = start.row as i32 - end.row as i32; //positive is moving up.
-        let diff_col = end.col as i32 - start.col as i32; //positive is to the right.
-        
+    fn check_attack(&self, c: Chessman, loc: Coord) -> Vec<Coord> {
+        let mut attacks = Vec::new();
+        let row = loc.row as i8;
+        let col = loc.col as i8;
+        match c.piece {
+            Pawn    => {
+                if c.color == White {
+                    if col - 1 >= 0 {
+                        attacks.push(Coord::new((row - 1) as usize, (col - 1) as usize));
+                    }
+                    if col + 1 < 8 {
+                        attacks.push(Coord::new((row - 1) as usize, (col + 1) as usize));
+                    }
+                }
+                else {
+                    if loc.col as i8 - 1 >= 0 {
+                        attacks.push(Coord::new((row + 1) as usize, (col - 1) as usize));
+                    }
+                    if loc.col + 1 < 8 {
+                        attacks.push(Coord::new((row + 1) as usize, (col + 1) as usize));
+                    }
+                }
+            }
+            Rook    => {
+                //look to our left (starting with closest square)
+                for l in (0..loc.col).rev() {
+                    match self.board[loc.row][l] {
+                        Some(p) => {
+                            //we found an ally
+                            if p.color == c.color {
+                                break;
+                            }
+                            //we found an enemy
+                            else {
+                                attacks.push(Coord::new(loc.row, l));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(loc.row, l)),
+                    }
+                }
+                //llook to our right (starting with closest square)
+                for r in (loc.col + 1)..8 {
+                    match self.board[loc.row][r] {
+                        Some(p) => {
+                            //we found an ally
+                            if p.color == c.color {
+                                break;
+                            }
+                            else {
+                                attacks.push(Coord::new(loc.row, r));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(loc.row, r)),
+                    }
+                }
+                //look above us (starting with closest square)
+                for u in (0..loc.row).rev() {
+                    match self.board[u][loc.col] {
+                        Some(p) => {
+                            //we found an ally
+                            if p.color == c.color {
+                                break;
+                            }
+                            else {
+                                attacks.push(Coord::new(u, loc.col));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(u, loc.col)),
+                    }
+                }
+                //look below us (starting with closest square)
+                for d in (loc.row + 1)..8 {
+                    match self.board[d][loc.col] {
+                        Some(p) => {
+                            if p.color == c.color {
+                                break;
+                            }
+                            else {
+                                attacks.push(Coord::new(d, loc.col));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(d, loc.col)),
+                    }
+                }
+            }
+
+            Bishop  => {
+                for i in 1..8 {
+                    if row - i >= 0 && col - i >= 0 {
+                        match self.board[(row - i) as usize][(col - i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row - i) as usize, (col - i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row - i) as usize, (col - i) as usize))
+                        }
+                    }
+                    if row - i >= 0 && col + i < 8 {
+                        match self.board[(row - i) as usize][(col + i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row - i) as usize, (col + i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row - i) as usize, (col + i) as usize)),
+                        }
+                    }
+                    if row + i < 8 && col - i >= 0 {
+                        match self.board[(row + i) as usize][(col - i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row + i) as usize, (col - i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row + i) as usize, (col - i) as usize)),
+                        }
+                    }
+                    if row + i < 8 && col + i < 8 {
+                        match self.board[(row + i) as usize][(col + i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row + i) as usize, (col + i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row + i) as usize, (col + i) as usize)),
+                        }
+                    }
+                }
+            }
+
+            Knight  => {
+                for i in -2..=2 {
+                    if i == 0 { continue; }
+                    let j;
+                    if i % 2 == 1 { j = 2; }
+                    else { j = 1; }
+                    if row + i >= 0 && row + i < 8 && col + j < 8{
+                        match self.board[(row + i) as usize][(col + j) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row + i) as usize, (col + j) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row + i) as usize, (col + j) as usize)),
+                        }
+                    }
+                    if row + i >= 0 && row + i < 8 && col - j >= 0{
+                        match self.board[(row + i) as usize][(col - j) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row + i) as usize, (col - j) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row + i) as usize, (col - j) as usize)),
+                        }
+                    }
+                }
+            }
+            Queen   => {
+                //look to our left (starting with closest square)
+                for l in (0..loc.col).rev() {
+                    match self.board[loc.row][l] {
+                        Some(p) => {
+                            //we found an ally
+                            if p.color == c.color {
+                                break;
+                            }
+                            //we found an enemy
+                            else {
+                                attacks.push(Coord::new(loc.row, l));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(loc.row, l)),
+                    }
+                }
+                //llook to our right (starting with closest square)
+                for r in (loc.col + 1)..8 {
+                    match self.board[loc.row][r] {
+                        Some(p) => {
+                            //we found an ally
+                            if p.color == c.color {
+                                break;
+                            }
+                            else {
+                                attacks.push(Coord::new(loc.row, r));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(loc.row, r)),
+                    }
+                }
+                //look above us (starting with closest square)
+                for u in (0..loc.row).rev() {
+                    match self.board[u][loc.col] {
+                        Some(p) => {
+                            //we found an ally
+                            if p.color == c.color {
+                                break;
+                            }
+                            else {
+                                attacks.push(Coord::new(u, loc.col));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(u, loc.col)),
+                    }
+                }
+                //look below us (starting with closest square)
+                for d in (loc.row + 1)..8 {
+                    match self.board[d][loc.col] {
+                        Some(p) => {
+                            if p.color == c.color {
+                                break;
+                            }
+                            else {
+                                attacks.push(Coord::new(d, loc.col));
+                                break;
+                            }
+                        }
+                        None    => attacks.push(Coord::new(d, loc.col)),
+                    }
+                }
+                for i in 1..8 {
+                    if row - i >= 0 && col - i >= 0 {
+                        match self.board[(row - i) as usize][(col - i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row - i) as usize, (col - i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row - i) as usize, (col - i) as usize))
+                        }
+                    }
+                    if row - i >= 0 && col + i < 8 {
+                        match self.board[(row - i) as usize][(col + i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row - i) as usize, (col + i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row - i) as usize, (col + i) as usize)),
+                        }
+                    }
+                    if row + i < 8 && col - i >= 0 {
+                        match self.board[(row + i) as usize][(col - i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row + i) as usize, (col - i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row + i) as usize, (col - i) as usize)),
+                        }
+                    }
+                    if row + i < 8 && col + i < 8 {
+                        match self.board[(row + i) as usize][(col + i) as usize] {
+                            Some(p) => {
+                                if p.color == c.color {
+                                    break;
+                                }
+                                else {
+                                    attacks.push(Coord::new((row + i) as usize, (col + i) as usize));
+                                }
+                            }
+                            None    => attacks.push(Coord::new((row + i) as usize, (col + i) as usize)),
+                        }
+                    }
+                }
+            }
+            King    => {
+                for i in -1..=1 {
+                    for j in -1..=1 {
+                        if i == 0 && j == 0 { continue; }
+                        let mr = row + i;
+                        let mc = col + j;
+                        if mr >= 0 && mr < 8 && mc >= 0 && mc < 8 {
+                            match self.board[mr as usize][mc as usize] {
+                                Some(p) => {
+                                    if p.color == c.color {
+                                        break;
+                                    }
+                                    else {
+                                        attacks.push(Coord::new(mr as usize, mc as usize));
+                                    }
+                                }
+                                None    => attacks.push(Coord::new(mr as usize, mc as usize)),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        attacks
+    }
 
 
     pub fn player_move(&mut self, start: Coord, end: Coord) -> Option<bool> {
@@ -68,18 +390,18 @@ impl Chessboard {
                                     //check that the path to the destination square is not
                                     //obstructed except if piece is knight or king
 
+                                    
 
 
-                                    /*
-                                    if p.piece == King {
-                                        Some(true)
-                                    }
-                                    else {
-                                        self.board[end.row][end.col] = self.board[start.row][start.col];
-                                        self.board[start.row][start.col] = None;
-                                        Some(false)
-                                    }
-                                    */
+
+
+
+
+
+                                    
+                                    self.board[end.row][end.col] = self.board[start.row][start.col];
+                                    self.board[start.row][start.col] = None;
+                                    Some(false)
                                 }
                             }
                         }

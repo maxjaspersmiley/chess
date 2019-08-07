@@ -18,6 +18,13 @@ pub struct Coord {
     pub col: usize,
 }
 
+impl Coord {
+    pub fn new(r: usize, c: usize) -> Coord {
+        Coord{row: r, col: c}
+    }
+}
+
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Color {
     White,

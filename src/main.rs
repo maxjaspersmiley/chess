@@ -86,26 +86,29 @@ fn main() {
     cboard.player_move(Coord{row: 3, col: 7}, Coord{row: 3, col: 0});
     cboard.print();
     println!("{}", i);
-
+    i += 1;
     println!("King up.");
     cboard.player_move(Coord{row: 7, col: 4}, Coord{row: 6, col: 4});
     cboard.print();
     println!("{}", i);
+    i += 1;
     println!("King right (should fail).");
     cboard.player_move(Coord{row: 6, col: 4}, Coord{row: 6, col: 5});
     cboard.print();
     println!("{}", i);
-
+    i += 1;
     println!("Knight up/left.");
     cboard.player_move(Coord{row: 7, col: 6}, Coord{row: 5, col: 5});
     cboard.print();
     println!("{}", i);
+    i += 1;
     println!("Knight down/left.");
     cboard.player_move(Coord{row:  5, col: 5}, Coord{row: 7, col: 4});
     cboard.print();
     println!("{}", i);
+    i += 1;
     println!("Knight left/up (should fail).");
     cboard.player_move(Coord{row:  7, col: 4}, Coord{row: 6, col: 2});
     cboard.print();
-    println!("{}", i);
+    println!("{}", i://doc.rust-lang.org/std/vec/struct.Vec.html#methods ;
 }
