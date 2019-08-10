@@ -23,7 +23,10 @@ fn move_loop(mut cboard: Chessboard) {
     let mut active_player: Color = White;
 
     loop {
-        cboard.print();
+        match active_player {
+            White => cboard.print_white(),
+            Black => cboard.print_black(),
+        }
         let r_str = format!("{} player, enter your move: ", active_player);
         let reply = rprompt::prompt_reply_stdout(&r_str);
         match reply {

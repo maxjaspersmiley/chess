@@ -7,7 +7,9 @@ use crate::chessboard::chessmen::Color::*;
 use crate::chessboard::chessmen::Piece::*;
 
 pub struct Chessboard {
-    board: [[Option<Chessman>; 8]; 8] 
+    board: [[Option<Chessman>; 8]; 8],
+    white_king: Coord,
+    black_king: Coord,
 }
 
 impl Chessboard {
@@ -35,11 +37,13 @@ impl Chessboard {
 
         board[0][3] = Some(Chessman{color: Black, piece: Queen});
         board[0][4] = Some(Chessman{color: Black, piece: King});
+        let white_king = Coord::new(0, 4);
         
         board[7][3] = Some(Chessman{color: White, piece: Queen});
         board[7][4] = Some(Chessman{color: White, piece: King});
+        let black_king = Coord::new(7, 4);
 
-        Chessboard{board}
+        Chessboard{board, white_king, black_king}
     }
     
     pub fn check_ownership(&self, loc: Coord, color: Color) -> bool {
@@ -47,8 +51,7 @@ impl Chessboard {
             None    => false,
             Some(a) => a.color == color,
         }
-    }
-
+    }  
 
     fn check_attack(&self, c: Chessman, loc: Coord) -> Vec<Coord> {
         let mut attacks = Vec::new();
@@ -401,7 +404,6 @@ impl Chessboard {
         attacks
     }
 
-
     pub fn player_move(&mut self, start: Coord, end: Coord) -> Option<bool> {
         //check the piece at start location. if empty, failure
         match self.board[start.row][start.col] {
@@ -417,9 +419,32 @@ impl Chessboard {
                             None
                         }
                         else {
+                            let piece = self.board[end.row][end.col];
                             self.board[end.row][end.col] = self.board[start.row][start.col];
                             self.board[start.row][start.col] = None;
-                            Some(false)
+                            if c.piece == King {
+                                match c.color {
+                                    White => self.white_king = end,
+                                    Black => self.black_king = end,
+                                }
+                            }
+
+                            if self.check_for_check(c.color) {
+                                println!("That move would put you in check. Try again!");
+                                self.board[start.row][start.col] = self.board[end.row][end.col];
+                                self.board[end.row][end.col] = piece;
+                                if c.piece == King {
+                                    match c.color {
+                                        White => self.white_king = start,
+                                        Black => self.black_king = start,
+                                    }
+                                }
+                                None
+                            }
+    
+                            else {
+                                Some(false)
+                            }
                         }
                     }
                 }
@@ -427,7 +452,47 @@ impl Chessboard {
         }
     }
 
-    pub fn print(&self) {
+    /*
+     * I don't know how to make this work!!
+    pub fn  check_for_mate(&self, color: Color) -> bool {
+        let mut checkmate = false;
+        let king_coord = match color {
+            White => self.white_king,
+            Black => self.black_king,
+        };
+        for square in self.check_attack(self.board[king_coord.row][king_coord.col].unwrap(), king_coord) {
+            
+        }
+        checkmate
+    }
+
+    */
+
+        //check to see if "color's" king is in check.
+    pub fn check_for_check(&self, color: Color) -> bool {
+        let king_coord = match color {
+            White => self.white_king,
+            Black => self.black_king,
+        };
+
+        for row in 0..8 {
+            for col in 0..8 {
+                match self.board[row][col] {
+                    None    => (),
+                    Some(c) => {
+                        if c.color != color {
+                            if self.check_attack(c, Coord::new(row, col)).contains(&king_coord) {
+                                true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn print_white(&self) {
         for row in 0..8 {
             if row == 0{
                 for i in 0..49 {
@@ -466,6 +531,51 @@ impl Chessboard {
         for i in 0..49 {
             print!("{}", "-".black().on_white());
             if i == 48 {
+                print!("{}", "   ".black().on_white());
+            }
+        }
+        println!("");
+    }
+
+    pub fn print_black(&self) {
+        for row in (0..8).rev() {
+            if row == 7{
+                for i in (0..49).rev() {
+                    if i % 6 == 3 {
+                        print!("{}", (((((i) / 6) + 65) as u8) as char).to_string().black().on_white());
+                    }
+                    else{
+                        print!("{}", "-".black().on_white());
+                    }
+                    if i == 0 {
+                        print!("{}", "   ".black().on_white());
+                    }
+                }
+            }
+            else {
+                for i in (0..49).rev() {
+                    if i % 6 == 0 {
+                        print!("{}", "|".black().on_white());
+                        if i == 0 {
+                            print!("{}", "   ".black().on_white());
+                        }
+                    }
+                    else {
+                        print!("{}", "-".black().on_white());
+                    }
+                }
+            }
+            println!("");
+            for col in (0..8).rev() {
+                print!("{}{}{}", "|  ".black().on_white(), chessmen::print(self.board[row][col]), "  ".black().on_white());
+                if col == 0 {
+                    println!("{}{}{}", "| ".black().on_white(), (8 - row).to_string().black().on_white(), " ".black().on_white());
+                }
+            }
+        }
+        for i in (0..49).rev() {
+            print!("{}", "-".black().on_white());
+            if i == 0 {
                 print!("{}", "   ".black().on_white());
             }
         }

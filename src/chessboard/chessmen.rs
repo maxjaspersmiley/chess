@@ -3,7 +3,7 @@ use crate::chessboard::chessmen::Color::*;
 use colored::Colorize;
 use std::fmt;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Piece {
     Pawn,
     Rook,
